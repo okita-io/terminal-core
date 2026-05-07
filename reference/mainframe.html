@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Terminal Core - Mainframe</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&amp;family=Space+Mono:ital,wght@0,400;0,700;1,400&amp;family=Share+Tech+Mono&amp;family=Fira+Code:wght@300;400;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00F0FF", // Neon Cyan
+                        "secondary": "#FF003C", // Neon Magenta
+                        "background-dark": "#050505", // Void Black
+                        "surface-dark": "#0A0A0A", // Terminal Gray
+                        "text-primary": "#E0E0E0", // Terminal White
+                        "text-dim": "#444444", // Muted
+                    },
+                    fontFamily: {
+                        "display": ['"JetBrains Mono"', "monospace"],
+                        "body": ['"Space Mono"', "monospace"],
+                        "micro": ['"Share Tech Mono"', "monospace"],
+                        "code": ['"Fira Code"', "monospace"],
+                    },
+                    boxShadow: {
+                        "glow-cyan": "0 0 10px rgba(0, 240, 255, 0.4)",
+                        "glow-magenta": "0 0 10px rgba(255, 0, 60, 0.4)",
+                    },
+                    animation: {
+                        "marquee": "marquee 20s linear infinite",
+                        "blink": "blink 1s step-end infinite",
+                    },
+                    keyframes: {
+                        marquee: {
+                            "0%": { transform: "translateX(100%)" },
+                            "100%": { transform: "translateX(-100%)" },
+                        },
+                        blink: {
+                            "0%, 100%": { opacity: "1" },
+                            "50%": { opacity: "0" },
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for Webkit */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050505;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #444444;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00F0FF;
+        }
+
+        /* Scanline effect overlay */
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+        
+        /* CRT Flicker animation */
+        @keyframes flicker {
+            0% { opacity: 0.97; }
+            5% { opacity: 0.95; }
+            10% { opacity: 0.9; }
+            15% { opacity: 0.95; }
+            20% { opacity: 0.99; }
+            100% { opacity: 0.97; }
+        }
+        
+        .crt-flicker {
+            animation: flicker 0.15s infinite;
+        }
+
+        /* Glitch text effect on hover */
+        .glitch-hover:hover {
+            text-shadow: 2px 0 #FF003C, -2px 0 #00F0FF;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-dark text-text-primary font-body overflow-x-hidden min-h-screen flex flex-col antialiased selection:bg-primary selection:text-black">
+<!-- Sticky Header -->
+<header class="sticky top-0 z-50 bg-background-dark/95 backdrop-blur-sm border-b border-text-dim">
+<div class="flex items-center justify-between px-4 h-14">
+<h1 class="font-display font-bold text-lg tracking-tight text-primary glitch-hover cursor-default select-none">
+                TERMINAL_CORE <span class="text-xs text-text-dim">v1.0</span>
+</h1>
+<button class="group flex items-center justify-center w-10 h-10 border border-transparent hover:border-primary hover:bg-primary/10 transition-colors duration-200">
+<span class="material-symbols-outlined text-primary group-hover:animate-pulse">search</span>
+</button>
+</div>
+<!-- Scrolling Marquee -->
+<div class="w-full border-b border-text-dim bg-surface-dark h-6 overflow-hidden flex items-center relative">
+<div class="whitespace-nowrap animate-marquee absolute font-micro text-xs text-primary uppercase tracking-widest">
+                &gt;&gt; LATEST PACKETS RECEIVED // SYSTEM OPTIMAL // 424 NEW UPLOADS // NULL_POINTER DETECTED IN SECTOR 7 // VIBE_CHECK: PASSED // 
+            </div>
+</div>
+</header>
+<!-- Main Content Grid -->
+<main class="flex-1 w-full max-w-md mx-auto relative pb-20">
+<!-- Filter Matrix -->
+<div class="sticky top-20 z-40 bg-background-dark/80 backdrop-blur border-b border-text-dim py-3 px-4 overflow-x-auto no-scrollbar flex gap-3 mb-4">
+<button class="shrink-0 px-3 py-1 bg-primary text-black font-display text-sm font-bold border border-primary hover:shadow-glow-cyan uppercase">
+                [ALL]
+            </button>
+<button class="shrink-0 px-3 py-1 bg-transparent text-text-dim font-display text-sm font-bold border border-text-dim hover:border-primary hover:text-primary transition-colors uppercase">
+                [HIGH_VIBE]
+            </button>
+<button class="shrink-0 px-3 py-1 bg-transparent text-text-dim font-display text-sm font-bold border border-text-dim hover:border-primary hover:text-primary transition-colors uppercase">
+                [RETRO]
+            </button>
+<button class="shrink-0 px-3 py-1 bg-transparent text-text-dim font-display text-sm font-bold border border-text-dim hover:border-primary hover:text-primary transition-colors uppercase">
+                [GLITCH]
+            </button>
+<button class="shrink-0 px-3 py-1 bg-transparent text-text-dim font-display text-sm font-bold border border-text-dim hover:border-primary hover:text-primary transition-colors uppercase">
+                [RAW_CODE]
+            </button>
+</div>
+<!-- Feed Container -->
+<div class="px-4 space-y-6">
+<!-- Card 1: Pure Synth (AI High) -->
+<article class="group relative w-full border border-text-dim bg-surface-dark hover:border-primary transition-colors duration-300">
+<!-- Visual -->
+<div class="relative w-full aspect-video border-b border-text-dim overflow-hidden bg-black">
+<img alt="Cyberpunk city street with neon signs and rain, highly detailed digital art style" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300 mix-blend-screen" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcT3bBPUZhTExDP_Lv-SHzWQ8IIsUHfaqGd33_cv3uKUYDzn2mr5QRxfjJCJslj3DBK4hPS_RRVtXqSwsFkPc-NZ2H8h3s0pam7sq79ViT378a88pUsxpf7D1e80sJuDniii-Q8rzRSZGpYMlpep3xceIDl6Os5ugK_JiWc9hZYjsSreAueFXadkJpc27KolwTkhHLboyPyYzRV1lXugxQS_ieq9owPGyc4lnYRCdcVg78glI1myyjnlNv1IrZJGqDiJU4Oz6K9VU"/>
+<div class="absolute inset-0 scanlines opacity-50"></div>
+<div class="absolute top-2 right-2 bg-black/80 border border-primary px-2 py-0.5 text-[10px] text-primary font-micro uppercase tracking-wider">
+                        LIVE_FEED
+                    </div>
+</div>
+<!-- Content -->
+<div class="p-3 space-y-3">
+<!-- Header -->
+<div class="flex justify-between items-baseline">
+<h2 class="font-display font-bold text-lg text-white uppercase tracking-tight truncate pr-2">
+                            NEON_DRIFTER_PRO
+                        </h2>
+<span class="font-code text-xs text-text-dim whitespace-nowrap">v2.1</span>
+</div>
+<!-- Vibe Bar (High AI) -->
+<div class="space-y-1">
+<div class="flex justify-between text-[10px] font-micro uppercase text-text-dim">
+<span>VIBE_ANALYSIS</span>
+<span class="text-primary animate-pulse">PURE_SYNTH</span>
+</div>
+<div class="flex gap-0.5 h-2">
+<div class="flex-1 bg-primary shadow-glow-cyan"></div>
+<div class="flex-1 bg-primary shadow-glow-cyan"></div>
+<div class="flex-1 bg-primary shadow-glow-cyan"></div>
+<div class="flex-1 bg-primary shadow-glow-cyan"></div>
+<div class="flex-1 bg-primary shadow-glow-cyan"></div>
+</div>
+</div>
+<!-- Data Grid -->
+<div class="grid grid-cols-4 gap-y-2 gap-x-1 pt-2 border-t border-dashed border-text-dim/30">
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">visibility</span>
+<span class="font-micro text-xs">12k</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">play_arrow</span>
+<span class="font-micro text-xs">4.1k</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">star</span>
+<span class="font-micro text-xs">4.9</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">chat</span>
+<span class="font-micro text-xs">342</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">save</span>
+<span class="font-micro text-xs">2MB</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">terminal</span>
+<span class="font-micro text-xs">JS</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+<span class="font-micro text-xs">2h</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">person</span>
+<span class="font-micro text-xs">@dev</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 2: Bio Code (Human High) -->
+<article class="group relative w-full border border-text-dim bg-surface-dark hover:border-secondary transition-colors duration-300">
+<!-- Visual -->
+<div class="relative w-full aspect-video border-b border-text-dim overflow-hidden bg-black">
+<img alt="Abstract pixel art landscape with mountains and a sun, retro 8-bit style" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300 grayscale group-hover:grayscale-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvUXnvKghQR8HOGFiSkvYWZ0wGh-HtpgHO1SSH-kIrkCibtSEbKdK6J-xIumJBpXJvAMLziS04OMs2CqMiSxqTfLU_AUmUk6A2R-bB9sSxPGt9lOT762Lvr2hN9-803XzcAEK39gfM5Rw-d2ZFxhtXEQyaFgRvpyRSSI6FT3E3bbD8lO8Iv-fuiVJN5TiYaf3TxTh4Mx7YOb1C_tdpDoBHptJrLDtnmDtXvaP6KN_npddJMJcC9MCEzPkK-bpOWXpIkIDgndkEL4Y"/>
+<div class="absolute inset-0 scanlines opacity-50"></div>
+</div>
+<!-- Content -->
+<div class="p-3 space-y-3">
+<div class="flex justify-between items-baseline">
+<h2 class="font-display font-bold text-lg text-white uppercase tracking-tight truncate pr-2">
+                            MANUAL_OVERRIDE
+                        </h2>
+<span class="font-code text-xs text-text-dim whitespace-nowrap">v0.4a</span>
+</div>
+<!-- Vibe Bar (Human) -->
+<div class="space-y-1">
+<div class="flex justify-between text-[10px] font-micro uppercase text-text-dim">
+<span>VIBE_ANALYSIS</span>
+<span class="text-secondary font-bold">BIO_CODE</span>
+</div>
+<div class="flex gap-0.5 h-2">
+<div class="flex-1 bg-secondary shadow-glow-magenta"></div>
+<div class="flex-1 bg-secondary/30"></div>
+<div class="flex-1 bg-secondary/10"></div>
+<div class="flex-1 bg-secondary/10"></div>
+<div class="flex-1 bg-secondary/10"></div>
+</div>
+</div>
+<!-- Data Grid -->
+<div class="grid grid-cols-4 gap-y-2 gap-x-1 pt-2 border-t border-dashed border-text-dim/30">
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">visibility</span>
+<span class="font-micro text-xs">3.4k</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">play_arrow</span>
+<span class="font-micro text-xs">980</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">star</span>
+<span class="font-micro text-xs">4.2</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">chat</span>
+<span class="font-micro text-xs">88</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">save</span>
+<span class="font-micro text-xs">8MB</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">terminal</span>
+<span class="font-micro text-xs">C++</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+<span class="font-micro text-xs">5h</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">person</span>
+<span class="font-micro text-xs">@art</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 3: Hybrid (Mixed) -->
+<article class="group relative w-full border border-text-dim bg-surface-dark hover:border-white transition-colors duration-300">
+<!-- Visual -->
+<div class="relative w-full aspect-video border-b border-text-dim overflow-hidden bg-black">
+<img alt="Server room hallway with green laser lights, technological background" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAENhlUzrP7poAaSMcBDMQcTAxZiCqla75L4IqyWyqlkvyhcZEXy2Nj-7DomnS8TZYKvwf1E06nBGYxmvkN_aEQil4pWS9zybNxq3PPn7NdUwt1m1yg2IHATyw1XDpQe3vX3qgHp9yF-8erT7fRvs10KlxBOLCKbadJo0XO68vvFE847ND2cL2gtKI279Gm1w5dMKxYwdGGGT759wai5EBZjaTLkb42C1cbuGdj8E5W0LME6hgnrzcJ1JS62oZjFEX9iCyOnMXpahs"/>
+<div class="absolute inset-0 scanlines opacity-50"></div>
+</div>
+<!-- Content -->
+<div class="p-3 space-y-3">
+<div class="flex justify-between items-baseline">
+<h2 class="font-display font-bold text-lg text-white uppercase tracking-tight truncate pr-2">
+                            ECHO_CHAMBER
+                        </h2>
+<span class="font-code text-xs text-text-dim whitespace-nowrap">v1.0</span>
+</div>
+<!-- Vibe Bar (Mixed) -->
+<div class="space-y-1">
+<div class="flex justify-between text-[10px] font-micro uppercase text-text-dim">
+<span>VIBE_ANALYSIS</span>
+<span class="text-white">HYBRID_SYSTEM</span>
+</div>
+<div class="flex gap-0.5 h-2">
+<div class="flex-1 bg-primary/80"></div>
+<div class="flex-1 bg-primary/80"></div>
+<div class="flex-1 bg-white/50"></div>
+<div class="flex-1 bg-secondary/30"></div>
+<div class="flex-1 bg-secondary/30"></div>
+</div>
+</div>
+<!-- Data Grid -->
+<div class="grid grid-cols-4 gap-y-2 gap-x-1 pt-2 border-t border-dashed border-text-dim/30">
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">visibility</span>
+<span class="font-micro text-xs">800</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">play_arrow</span>
+<span class="font-micro text-xs">120</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">star</span>
+<span class="font-micro text-xs">3.8</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">chat</span>
+<span class="font-micro text-xs">12</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">save</span>
+<span class="font-micro text-xs">1MB</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">terminal</span>
+<span class="font-micro text-xs">PY</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+<span class="font-micro text-xs">1d</span>
+</div>
+<div class="flex items-center gap-1 text-text-dim group/stat hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[14px]">person</span>
+<span class="font-micro text-xs">@usr</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Loading State -->
+<div class="flex justify-center py-8">
+<span class="font-display text-primary animate-pulse text-lg tracking-widest">LOADING_PACKETS<span class="animate-blink">_</span></span>
+</div>
+</div>
+</main>
+<!-- FAB: Upload Packet -->
+<div class="fixed bottom-6 right-6 z-50">
+<button class="flex items-center justify-center w-14 h-14 bg-black border border-primary shadow-glow-cyan text-primary hover:bg-primary hover:text-black transition-all duration-200 group relative">
+<span class="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">add</span>
+<!-- Tooltip -->
+<div class="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-black border border-text-dim px-2 py-1 text-xs text-primary font-code opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                UPLOAD_PACKET
+            </div>
+</button>
+</div>
+<!-- Bottom Nav (Reused from request but adapted to style) -->
+<nav class="fixed bottom-0 w-full z-40 bg-background-dark border-t border-text-dim pb-safe">
+<div class="flex gap-2 bg-[#0A0A0A] px-4 pb-3 pt-2">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" href="#">
+<span class="material-symbols-outlined text-2xl">home</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-text-dim hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">pie_chart</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-text-dim hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">terminal</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-text-dim hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">person</span>
+</a>
+</div>
+</nav>
+</body></html>

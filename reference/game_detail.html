@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Terminal Core // Diagnostic View</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&amp;family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Space+Mono:wght@400;700&amp;family=Share+Tech+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00F0FF", // Neon Cyan
+                        "secondary": "#FF003C", // Neon Magenta
+                        "background-light": "#f5f8f8", 
+                        "background-dark": "#050505", // Void Black
+                        "surface-dark": "#0A0A0A",
+                        "text-dim": "#444444",
+                    },
+                    fontFamily: {
+                        "display": ["JetBrains Mono", "monospace"],
+                        "body": ["Space Mono", "monospace"],
+                        "sans": ["Space Grotesk", "sans-serif"],
+                        "micro": ["Share Tech Mono", "monospace"],
+                    },
+                    backgroundImage: {
+                        'scanlines': 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06))',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'flicker': 'flicker 0.15s infinite',
+                        'crt-turn-on': 'crtTurnOn 0.4s ease-out forwards',
+                    },
+                    keyframes: {
+                        flicker: {
+                            '0%': { opacity: '0.9' },
+                            '50%': { opacity: '1.0' },
+                            '100%': { opacity: '0.9' },
+                        },
+                        crtTurnOn: {
+                            '0%': { transform: 'scale(1, 0.002)', opacity: '0', filter: 'brightness(3)' },
+                            '50%': { transform: 'scale(1, 0.002)', opacity: '1', filter: 'brightness(3)' },
+                            '100%': { transform: 'scale(1, 1)', opacity: '1', filter: 'brightness(1)' },
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0A0A0A; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #444; 
+            border: 1px solid #00F0FF;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00F0FF; 
+        }
+
+        /* Scanline Overlay Class */
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+        
+        /* CRT Flicker */
+        .crt-flicker {
+            animation: flicker 0.15s infinite;
+        }
+
+        /* Glitch Text Effect */
+        .glitch-hover:hover {
+            text-shadow: 2px 0 #FF003C, -2px 0 #00F0FF;
+        }
+
+        /* Typing cursor */
+        .typing-cursor::after {
+            content: '█';
+            animation: blink 1s step-end infinite;
+            color: #00F0FF;
+            margin-left: 2px;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+        
+        /* Hexagon Clip Path for decoration */
+        .hex-clip {
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-dark text-slate-100 min-h-screen flex flex-col font-body selection:bg-primary selection:text-black overflow-x-hidden animate-crt-turn-on">
+<!-- Sticky Header -->
+<header class="sticky top-0 z-50 bg-background-dark/95 backdrop-blur-sm border-b border-text-dim/50">
+<div class="flex items-center justify-between p-3">
+<button class="group flex items-center gap-2 text-primary hover:text-white transition-colors">
+<span class="material-symbols-outlined text-xl group-hover:-translate-x-1 transition-transform">arrow_back</span>
+<span class="font-display font-bold text-sm tracking-tighter">RETURN_TO_ROOT</span>
+</button>
+<div class="flex items-center gap-2">
+<div class="h-2 w-2 bg-primary rounded-full animate-pulse"></div>
+<h1 class="font-display text-sm text-white tracking-tight uppercase">DIAGNOSTIC_VIEW // NEON_RIDER_v2.0</h1>
+</div>
+<button class="text-text-dim hover:text-secondary transition-colors">
+<span class="material-symbols-outlined text-xl">more_vert</span>
+</button>
+</div>
+<!-- Marquee Line -->
+<div class="w-full bg-surface-dark border-b border-text-dim/30 overflow-hidden whitespace-nowrap py-0.5">
+<p class="font-micro text-xs text-primary/70 animate-pulse-slow">
+                &gt;&gt; SYSTEM CHECK: OPTIMAL &gt;&gt; MEMORY: 64MB &gt;&gt; VIBE_CHECK: PASSED &gt;&gt; AI_LEVEL: 84% &gt;&gt; HUMAN_INTERVENTION: LOW &gt;&gt;
+            </p>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow flex flex-col relative w-full max-w-2xl mx-auto border-x border-text-dim/20 bg-background-dark shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+<!-- Hero Section -->
+<section class="relative h-[40vh] w-full bg-surface-dark overflow-hidden group">
+<!-- Background Image -->
+<div class="absolute inset-0 bg-cover bg-center opacity-80 group-hover:scale-105 transition-transform duration-700" data-alt="Abstract neon cyberpunk cityscape with glitching pink and blue lights" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB0Wm8EEeVpIHHOk1tOesxPK-t1WYp5fukYLJFYyPg0Mb0O9c7PEl7WSVJlLKDjynRe1qQk5yicX-5waZG35f2tQtktRa2YwX_NthmYuxNS8qPmRvwi-VcvkkuDQSb8j9dqhMC-Q3_eBUURpIyIzhJBoSPYeLjaAvikpH6BEigxsVZ_2ui2ZfMywpepPAquRPdW1VLpQ91uLlOXyogBBpn6Pu4xODHzHr_R6JDfVrwFafSC78l1XYKf-FUjwvaA6Clg_C_Z49nLXq8');">
+</div>
+<!-- Scanline Overlay -->
+<div class="absolute inset-0 scanlines opacity-40 pointer-events-none"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark via-transparent to-transparent"></div>
+<!-- Vibe Hexagon (Radar Chart Simulation) -->
+<div class="absolute bottom-4 right-4 z-10 hidden sm:block">
+<div class="relative w-32 h-32 flex items-center justify-center">
+<!-- Hexagon Shape SVG -->
+<svg class="w-full h-full drop-shadow-[0_0_10px_rgba(0,240,255,0.5)]" viewbox="0 0 100 100">
+<!-- Grid -->
+<polygon fill="none" points="50 5, 90 25, 90 75, 50 95, 10 75, 10 25" stroke="#444" stroke-width="1"></polygon>
+<polygon fill="none" points="50 25, 70 35, 70 65, 50 75, 30 65, 30 35" stroke="#444" stroke-width="1"></polygon>
+<!-- Data Area -->
+<polygon fill="rgba(0, 240, 255, 0.2)" points="50 10, 85 30, 80 70, 50 85, 20 65, 25 30" stroke="#00F0FF" stroke-width="2"></polygon>
+</svg>
+<!-- Labels -->
+<span class="absolute top-0 text-[8px] font-micro text-primary bg-black/50 px-1">AI%</span>
+<span class="absolute bottom-0 text-[8px] font-micro text-primary bg-black/50 px-1">FUN</span>
+<span class="absolute left-0 text-[8px] font-micro text-primary bg-black/50 px-1">UX</span>
+<span class="absolute right-0 text-[8px] font-micro text-primary bg-black/50 px-1">SPD</span>
+</div>
+</div>
+<!-- Mobile Vibe Stats (Replaces Hexagon on small screens) -->
+<div class="absolute bottom-4 right-4 z-10 sm:hidden flex flex-col items-end gap-1 bg-black/80 p-2 border border-text-dim backdrop-blur-sm">
+<div class="flex items-center gap-2">
+<span class="font-micro text-xs text-text-dim">AI_PCT:</span>
+<span class="font-display text-sm text-primary font-bold">94%</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-micro text-xs text-text-dim">FUN_VAL:</span>
+<span class="font-display text-sm text-secondary font-bold">8.5</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-micro text-xs text-text-dim">SPEED:</span>
+<span class="font-display text-sm text-white font-bold">HIGH</span>
+</div>
+</div>
+<!-- Title Overlay -->
+<div class="absolute bottom-4 left-4 z-10">
+<div class="inline-flex items-center gap-2 mb-1">
+<span class="px-1.5 py-0.5 bg-primary text-black font-display text-[10px] font-bold">PURE_SYNTH</span>
+<span class="font-micro text-xs text-white/80">v2.0.4b</span>
+</div>
+<h2 class="text-3xl md:text-4xl font-display font-bold text-white tracking-tighter drop-shadow-lg glitch-hover cursor-default">
+                    NEON_RIDER
+                </h2>
+</div>
+</section>
+<!-- Execution Module -->
+<section class="p-4 border-b border-text-dim/30 bg-background-dark z-20">
+<button class="group relative w-full overflow-hidden border border-primary bg-transparent hover:bg-primary/10 transition-all duration-100 py-4 px-6 flex items-center justify-between">
+<!-- Button Glow Effect -->
+<div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="flex items-center gap-3 relative z-10">
+<span class="material-symbols-outlined text-primary text-3xl animate-pulse">terminal</span>
+<div class="flex flex-col items-start">
+<span class="font-display font-bold text-xl text-white tracking-tight group-hover:translate-x-1 transition-transform">
+                            &gt; EXECUTE_GAME.EXE
+                        </span>
+<span class="font-micro text-xs text-primary/70">
+                            SIZE: 4.2MB // EST_LOAD: 1.2s
+                        </span>
+</div>
+</div>
+<span class="relative z-10 font-display text-2xl text-primary group-hover:text-white transition-colors">
+                    [ENTER]
+                </span>
+<!-- Corner Accents -->
+<div class="absolute top-0 left-0 w-2 h-2 border-t border-l border-primary"></div>
+<div class="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-primary"></div>
+</button>
+</section>
+<!-- Tab Navigation -->
+<section class="flex border-b border-text-dim/30 sticky top-[98px] bg-background-dark z-30">
+<button class="flex-1 py-3 px-2 border-r border-text-dim/30 text-center font-display text-xs md:text-sm font-bold bg-primary text-black hover:bg-primary hover:text-black transition-colors">
+                [01]_DIAGNOSTICS
+            </button>
+<button class="flex-1 py-3 px-2 border-r border-text-dim/30 text-center font-display text-xs md:text-sm font-bold text-text-dim hover:text-white hover:bg-surface-dark transition-colors">
+                [02]_SOURCE
+            </button>
+<button class="flex-1 py-3 px-2 text-center font-display text-xs md:text-sm font-bold text-text-dim hover:text-white hover:bg-surface-dark transition-colors">
+                [03]_COMM_LOG
+            </button>
+</section>
+<!-- Content Area: Diagnostics (Active Tab) -->
+<section class="p-4 md:p-6 space-y-8 pb-20">
+<!-- Description Block -->
+<div class="border-l-2 border-primary pl-4 py-1">
+<h3 class="font-display text-xs text-primary mb-2 opacity-70">&gt;&gt; FILE_DESCRIPTION</h3>
+<p class="font-sans text-sm md:text-base text-gray-300 leading-relaxed typing-cursor">
+                    Procedurally generated racing simulator situated in a post-singularity metropolis. Neural network driven traffic patterns adapt to player aggression. Warning: High-velocity visuals may induce vertigo.
+                </p>
+</div>
+<!-- Specs Grid -->
+<div>
+<h3 class="font-display text-xs text-primary mb-3 opacity-70">&gt;&gt; SYSTEM_REQUIREMENTS</h3>
+<div class="grid grid-cols-2 gap-px bg-text-dim/30 border border-text-dim/30">
+<!-- Cell 1 -->
+<div class="bg-surface-dark p-3 flex flex-col gap-1">
+<span class="font-micro text-[10px] text-text-dim uppercase">Memory_Alloc</span>
+<span class="font-display text-sm text-white">64 MB</span>
+</div>
+<!-- Cell 2 -->
+<div class="bg-surface-dark p-3 flex flex-col gap-1">
+<span class="font-micro text-[10px] text-text-dim uppercase">Render_Engine</span>
+<span class="font-display text-sm text-secondary">WEBGL_2.0</span>
+</div>
+<!-- Cell 3 -->
+<div class="bg-surface-dark p-3 flex flex-col gap-1">
+<span class="font-micro text-[10px] text-text-dim uppercase">Vibe_Protocol</span>
+<span class="font-display text-sm text-primary">SYNTHWAVE</span>
+</div>
+<!-- Cell 4 -->
+<div class="bg-surface-dark p-3 flex flex-col gap-1">
+<span class="font-micro text-[10px] text-text-dim uppercase">Latency</span>
+<span class="font-display text-sm text-white">~12ms</span>
+</div>
+</div>
+</div>
+<!-- Tags/Metadata -->
+<div>
+<h3 class="font-display text-xs text-primary mb-3 opacity-70">&gt;&gt; TAGS</h3>
+<div class="flex flex-wrap gap-2">
+<span class="border border-text-dim px-2 py-1 text-xs font-mono text-gray-400 hover:border-primary hover:text-primary transition-colors cursor-pointer">#RACING</span>
+<span class="border border-text-dim px-2 py-1 text-xs font-mono text-gray-400 hover:border-primary hover:text-primary transition-colors cursor-pointer">#GLITCH</span>
+<span class="border border-text-dim px-2 py-1 text-xs font-mono text-gray-400 hover:border-primary hover:text-primary transition-colors cursor-pointer">#AI_GENERATED</span>
+<span class="border border-text-dim px-2 py-1 text-xs font-mono text-gray-400 hover:border-primary hover:text-primary transition-colors cursor-pointer">#HIGH_CONTRAST</span>
+</div>
+</div>
+<!-- Source Preview (Teaser) -->
+<div class="relative opacity-60 hover:opacity-100 transition-opacity">
+<div class="flex justify-between items-end mb-2">
+<h3 class="font-display text-xs text-primary opacity-70">&gt;&gt; SOURCE_PREVIEW.JS</h3>
+<span class="font-micro text-[10px] text-text-dim">READ_ONLY</span>
+</div>
+<div class="bg-[#0c0c0c] border border-text-dim/50 p-4 rounded-sm font-mono text-xs overflow-x-auto">
+<pre><code class="language-javascript"><span class="text-secondary">function</span> <span class="text-primary">initWorld</span>() {
+  <span class="text-secondary">const</span> seed = <span class="text-[#a5d6ff]">0x4F2A1C</span>;
+  <span class="text-gray-500">// Neural net initialization</span>
+  <span class="text-secondary">let</span> traffic = <span class="text-secondary">new</span> <span class="text-primary">SwarmAI</span>(seed);
+  traffic.<span class="text-primary">injectChaos</span>(<span class="text-[#a5d6ff]">0.85</span>);
+  <span class="text-secondary">return</span> traffic;
+}</code></pre>
+</div>
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-background-dark/90 pointer-events-none flex items-end justify-center pb-4">
+<span class="text-xs text-primary font-mono bg-black/80 px-2 py-1 border border-primary/30">[ LOCKED // SWITCH TAB TO VIEW FULL ]</span>
+</div>
+</div>
+</section>
+</main>
+</body></html>

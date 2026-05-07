@@ -44,6 +44,7 @@
   "paths": {
     "sessions_dir": "sessions",
     "prompts_dir": "prompts",
+    "web_dir": "web",
     "phaser_references": "/Users/alexokita/Downloads/phaser-game-development/references",
     "phaser_skill": "/Users/alexokita/Downloads/phaser-game-development/SKILL.md",
     "phaser_cdn": "https://cdn.jsdelivr.net/npm/phaser@3.88.2/dist/phaser.min.js"

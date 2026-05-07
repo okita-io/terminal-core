@@ -12,13 +12,24 @@ from harness.pipeline import mutation as mutation_mod
 from harness.pipeline.severity import Action
 from harness.renderer import playwright_runner as renderer
 from harness.storage import milestones, session as sess
-from harness.storage import spec_store
+from harness.storage import spec_store, publisher
 from harness.storage.vectordb import FeedbackStore
 
 logger = logging.getLogger(__name__)
 
 _DESIGN_STAGES  = {"INIT", "DESIGN_REWRITE", "DESIGN_REVISE"}
 _GENERATE_STAGES = {"REWRITE", "REVISE", "POLISH"}
+
+
+def _try_publish(config: dict, state: dict, sessions_dir: str, milestone: str) -> None:
+    web_dir = config.get("paths", {}).get("web_dir")
+    if not web_dir:
+        return
+    try:
+        publisher.publish_milestone(state, sessions_dir, web_dir, milestone)
+        logger.info(f"[{state['game_id'][:8]}] Published {milestone} → {web_dir}/public/games/")
+    except Exception as exc:
+        logger.warning(f"[{state['game_id'][:8]}] Publish failed ({milestone}): {exc}")
 
 
 def run(config: dict, prompt_dir: str, state: dict, sessions_dir: str) -> dict:
@@ -96,6 +107,9 @@ def run(config: dict, prompt_dir: str, state: dict, sessions_dir: str) -> dict:
                 state["title"] = gdd.get("metadata", {}).get("title") or gdd.get("title") or state.get("title", "Untitled")
                 state.pop("_design_guidance", None)
 
+                # Rename session dir now that we have a title
+                sess.rename_session_dir(sessions_dir, state)
+
                 # Save versioned spec
                 parent_id = state.get("spec_id")
                 spec_id = spec_store.save_spec(sessions_dir, game_id, gdd, parent_spec_id=parent_id)
@@ -106,6 +120,7 @@ def run(config: dict, prompt_dir: str, state: dict, sessions_dir: str) -> dict:
                 new_ms = milestones.check_and_record(sessions_dir, state)
                 if new_ms:
                     logger.info(f"[{game_id[:8]}] Milestone: {new_ms.upper()}")
+                    _try_publish(config, state, sessions_dir, new_ms)
 
                 state["stage"] = "GENERATE"
             elif action == "REWRITE":
@@ -189,6 +204,7 @@ def run(config: dict, prompt_dir: str, state: dict, sessions_dir: str) -> dict:
             new_ms = milestones.check_and_record(sessions_dir, state)
             if new_ms:
                 logger.info(f"[{game_id[:8]}] Milestone: {new_ms.upper()}")
+                _try_publish(config, state, sessions_dir, new_ms)
 
             state["stage"] = "ADVERSARIAL"
             sess.save_session(sessions_dir, state)
@@ -317,6 +333,7 @@ def run(config: dict, prompt_dir: str, state: dict, sessions_dir: str) -> dict:
             new_ms = milestones.check_and_record(sessions_dir, state)
             if new_ms:
                 logger.info(f"[{game_id[:8]}] Milestone: {new_ms.upper()}")
+                _try_publish(config, state, sessions_dir, new_ms)
 
             if action == Action.APPROVE:
                 state["stage"] = "SHIPPED"

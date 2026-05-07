@@ -1,0 +1,51 @@
+{
+  "llm_roles": {
+    "generator": {
+      "provider": "openrouter",
+      "model": "anthropic/claude-opus-4",
+      "temperature": 0.9,
+      "max_tokens": 16000
+    },
+    "adversarial": {
+      "provider": "openrouter",
+      "model": "google/gemini-2.5-flash-preview",
+      "temperature": 0.3,
+      "max_tokens": 4000
+    },
+    "editorial": {
+      "provider": "openrouter",
+      "model": "anthropic/claude-sonnet-4-5",
+      "temperature": 0.2,
+      "max_tokens": 4000
+    }
+  },
+  "providers": {
+    "openrouter": {
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_key_env": "OPENROUTER_API_KEY"
+    },
+    "ollama": {
+      "base_url": "http://localhost:11434/v1",
+      "api_key": "ollama"
+    },
+    "lmstudio": {
+      "base_url": "http://localhost:1234/v1",
+      "api_key": "lmstudio"
+    }
+  },
+  "pipeline": {
+    "max_design_retries": 3,
+    "max_major_retries": 5,
+    "max_minor_retries": 3,
+    "screenshot_count": 3,
+    "render_wait_ms": 2000,
+    "interaction_wait_ms": 1000
+  },
+  "paths": {
+    "sessions_dir": "sessions",
+    "prompts_dir": "prompts",
+    "phaser_references": "/Users/alexokita/Downloads/phaser-game-development/references",
+    "phaser_skill": "/Users/alexokita/Downloads/phaser-game-development/SKILL.md",
+    "phaser_cdn": "https://cdn.jsdelivr.net/npm/phaser@3.88.2/dist/phaser.min.js"
+  }
+}
